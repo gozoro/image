@@ -1,0 +1,22 @@
+{
+	"name": "gozoro/image",
+	"description": "A simple classes for image resizing and cropping. Used GD library.",
+	"keywords":["image","resize","crop", "resizing", "cropping"],
+	"homepage": "https://github.com/gozoro/image",
+	"type": "library",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Gozoro",
+			"email": "gozoro@yandex.ru"
+		}
+	],
+	"require": {
+		"php": ">=5.5.9"
+	},
+	"autoload": {
+		"psr-4": {
+			"gozoro\\image\\": "src"
+		}
+	}
+}
