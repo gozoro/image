@@ -44,12 +44,12 @@ class Image
 
 	/**
 	 * Creating image resource
-	 * @param string $filename full path to image file
 	 * @return resource
 	 * @throws ImageException
 	 */
-	protected function createImage($filename)
+	protected function createImage()
 	{
+		$filename = $this->filename;
 		$ext = self::parseExtension($filename);
 
 		switch($ext)
@@ -62,9 +62,22 @@ class Image
 			case 'gif':
 				return imagecreatefromgif($filename);
 			default:
-				$this->throwException("Unknow image format - $ext.");
+				return $this->createDefaultImage();
 		}
 	}
+
+	/**
+	 * Creates default image.
+	 * Now throw ImageException "nknow image format".
+	 * You can override this method for your behavior.
+	 */
+	protected function createDefaultImage()
+	{
+		$filename = $this->filename;
+		$ext = self::parseExtension($filename);
+		$this->throwException("Unknow image format - $ext.");
+	}
+
 
 	/**
 	 * Returns image resource for use other function of library GD.
@@ -73,7 +86,7 @@ class Image
 	public function image()
 	{
 		if(!isset($this->image))
-			$this->image = $this->createImage($this->filename);
+			$this->image = $this->createImage();
 
 		return $this->image;
 	}
