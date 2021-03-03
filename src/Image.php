@@ -396,12 +396,14 @@ class Image
 	private function createImageFile($filename)
 	{
 		$ext = $this->getExtension();
+		$img = $this->image();
+
 		switch($ext)
 		{
 			case 'jpg':
-			case 'jpeg': return imagejpeg($this->image(), $filename);
-			case 'png': return imagepng($this->image(), $filename);
-			case 'gif': return imagegif($this->image(), $filename);
+			case 'jpeg': return imagejpeg($img, $filename);
+			case 'png': imagesavealpha($img, true); return imagepng($img, $filename);
+			case 'gif': return imagegif($img, $filename);
 			default: $this->throwException("Unknow image format - $ext.");
 		}
 		return true;
