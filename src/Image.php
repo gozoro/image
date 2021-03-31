@@ -43,24 +43,24 @@ class Image
 	}
 
 	/**
-	 * Creating image resource
+	 * Creating an input image resource.
 	 * @return resource
 	 * @throws ImageException
 	 */
-	protected function createImage()
+	protected function createInputImage()
 	{
 		$filename = $this->filename;
-		$ext = self::parseExtension($filename);
+		$ext = $this->getExtension();
 
 		switch($ext)
 		{
 			case 'jpg':
 			case 'jpeg':
-				return imagecreatefromjpeg($filename);
+				return imageCreateFromJpeg($filename);
 			case 'png':
-				return imagecreatefrompng($filename);
+				return imageCreateFromPng($filename);
 			case 'gif':
-				return imagecreatefromgif($filename);
+				return imageCreateFromGif($filename);
 			default:
 				return $this->createDefaultImage();
 		}
@@ -86,7 +86,7 @@ class Image
 	public function image()
 	{
 		if(!isset($this->image))
-			$this->image = $this->createImage();
+			$this->image = $this->createInputImage();
 
 		return $this->image;
 	}
@@ -129,7 +129,7 @@ class Image
 	{
 		if(!isset($this->ext))
 		{
-			$this->ext = self::parseExtension($this->filename);
+			$this->ext = static::parseExtension($this->filename);
 		}
 
 		return $this->ext;
@@ -178,6 +178,40 @@ class Image
 	public function isSquare()
 	{
 		return ($this->getWidth() == $this->getHeight());
+	}
+
+	/**
+	 * Creating new true color image.
+	 * @param int $width
+	 * @param int $height
+	 * @return resource
+	 */
+	protected function createTrueColorImage($width, $height)
+	{
+		$image = imageCreateTrueColor($width, $height);
+
+		$ext = $this->getExtension();
+
+		if($ext == 'png')
+		{
+			imageAlphaBlending($image, false);
+			imageSaveAlpha($image, true);
+		}
+		elseif($ext == 'gif')
+		{
+			$sourceImage = $this->image();
+			$transparentSourceIndex = imageColorTransparent($sourceImage);
+
+			if($transparentSourceIndex !== -1)
+			{
+				$transparentColor     = imageColorsForIndex($sourceImage, $transparentSourceIndex);
+				$transparentDestIndex = imageColorAllocate($image, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+				imageColorTransparent($image, $transparentDestIndex);
+				imageFill($image, 0, 0, $transparentDestIndex);
+			}
+		}
+
+		return $image;
 	}
 
 	/**
@@ -248,7 +282,7 @@ class Image
 		}
 
 		$imageSrc = $this->image();
-		$imageDst = imageCreateTrueColor($widthDst, $heightDst);
+		$imageDst = $this->createTrueColorImage($widthDst, $heightDst);
 
 		if(imageCopyResampled($imageDst, $imageSrc, 0,0,0,0, $widthDst, $heightDst, $widthSrc, $heightSrc))
 		{
@@ -281,9 +315,9 @@ class Image
 			$height = $heightSrc-$src_y;
 
 		$imageSrc = $this->image();
-		$imageDst = imageCreateTrueColor($width, $height);
+		$imageDst = $this->createTrueColorImage($width, $height);
 
-		if(imagecopy($imageDst, $imageSrc, 0, 0, $src_x, $src_y, $widthSrc, $heightSrc))
+		if(imageCopyResampled($imageDst, $imageSrc, 0, 0, $src_x, $src_y, $widthSrc, $heightSrc, $widthSrc, $heightSrc))
 		{
 			imagedestroy($imageSrc);
 			$this->image = $imageDst;
@@ -388,12 +422,12 @@ class Image
 	}
 
 	/**
-	 * Creating image file.
-	 * @param string $filename
+	 * Creating output image file.
+	 * @param string $filename output file name
 	 * @return bool
 	 * @throws ImageException
 	 */
-	private function createImageFile($filename)
+	private function createOutputImageFile($filename)
 	{
 		$ext = $this->getExtension();
 		$img = $this->image();
@@ -402,8 +436,8 @@ class Image
 		{
 			case 'jpg':
 			case 'jpeg': return imagejpeg($img, $filename);
-			case 'png': imagesavealpha($img, true); return imagepng($img, $filename);
-			case 'gif': return imagegif($img, $filename);
+			case 'png':  return imagepng($img, $filename);
+			case 'gif':  return imagegif($img, $filename);
 			default: $this->throwException("Unknow image format - $ext.");
 		}
 		return true;
@@ -455,7 +489,7 @@ class Image
 
 			if(is_writable($path))
 			{
-				if($this->createImageFile($filename))
+				if($this->createOutputImageFile($filename))
 				{
 					$this->afterSave();
 					return true;
