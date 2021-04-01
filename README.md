@@ -1,6 +1,6 @@
 # image
 A simple class for image resizing and cropping.
-Used GD library.
+Used only GD library.
 
 Installation
 ------------

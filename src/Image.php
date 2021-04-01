@@ -17,7 +17,7 @@ class Image
 	 * Stores file name.
 	 * @var string
 	 */
-	protected $filename;
+	private $filename;
 
 	/**
 	 * Stores extension of file.
@@ -29,7 +29,7 @@ class Image
 	 * Image of GD
 	 * @var resource
 	 */
-	protected $image;
+	private $image;
 
 
 
@@ -39,7 +39,78 @@ class Image
 	 */
 	public function __construct($filename)
 	{
+		$this->setFilename($filename);
+	}
+
+	/**
+	 * Sets file name
+	 * @param string $filename
+	 * @return static
+	 */
+	public function setFilename($filename)
+	{
 		$this->filename = $filename;
+		$this->ext = null;
+		return $this;
+	}
+
+	/**
+	 * Returns full path to image file.
+	 * @return string
+	 */
+	public function getFilename()
+	{
+		return $this->filename;
+	}
+
+	/**
+	 * Returns base name of image file.
+	 * @return string
+	 */
+	public function getBaseName()
+	{
+		return basename($this->getFilename());
+	}
+
+	/**
+	 * Returns extension of image file. Used strtolower().
+	 * @return string|null
+	 */
+	public function getExtension()
+	{
+		if(!isset($this->ext))
+		{
+			$filename  = $this->getFilename();
+			$this->ext = static::parseExtension($filename);
+		}
+
+		return $this->ext;
+	}
+
+	/**
+	 * Sets image file extension.
+	 * @param string $ext jpg|png|gif
+	 * @return static
+	 * @deprecated since v1.0.4
+	 */
+	public function setExtension($ext)
+	{
+		$this->ext = strtolower($ext);
+		return $this;
+	}
+
+	/**
+	 * Returns image resource for use other function of library GD.
+	 * @return resource
+	 */
+	public function image()
+	{
+		if(!isset($this->image))
+		{
+			$this->image = $this->createInputImage();
+		}
+
+		return $this->image;
 	}
 
 	/**
@@ -73,66 +144,8 @@ class Image
 	 */
 	protected function createDefaultImage()
 	{
-		$filename = $this->filename;
-		$ext = self::parseExtension($filename);
+		$ext = $this->getExtension();
 		$this->throwException("Unknow image format - $ext.");
-	}
-
-
-	/**
-	 * Returns image resource for use other function of library GD.
-	 * @return resource
-	 */
-	public function image()
-	{
-		if(!isset($this->image))
-			$this->image = $this->createInputImage();
-
-		return $this->image;
-	}
-
-	/**
-	 * Returns full path to image file.
-	 * @return string
-	 */
-	public function getFilename()
-	{
-		return $this->filename;
-	}
-
-	/**
-	 * Returns base name of image file.
-	 * @return string
-	 */
-	public function getBaseName()
-	{
-		return basename($this->getFilename());
-	}
-
-	/**
-	 * Sets image file extension.
-	 * @param string $ext jpg|png|gif
-	 * @return static
-	 */
-	public function setExtension($ext)
-	{
-		$this->ext = strtolower($ext);
-		return $this;
-	}
-
-
-	/**
-	 * Returns extension of image file. Used strtolower().
-	 * @return string|null
-	 */
-	public function getExtension()
-	{
-		if(!isset($this->ext))
-		{
-			$this->ext = static::parseExtension($this->filename);
-		}
-
-		return $this->ext;
 	}
 
 	/**
@@ -199,19 +212,17 @@ class Image
 		}
 		elseif($ext == 'gif')
 		{
-//			$sourceImage = $this->image();
-//			$transparentSourceIndex = imageColorTransparent($sourceImage);
-//
-//
-//
-//
-//			if($transparentSourceIndex !== -1)
-//			{
-//				$transparentColor     = imageColorsForIndex($sourceImage, $transparentSourceIndex);
-//				$transparentDestIndex = imageColorAllocate($image, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
-//				imageColorTransparent($image, $transparentDestIndex);
-//				imageFill($image, 0, 0, $transparentDestIndex);
-//			}
+			$sourceImage = $this->image();
+			$transparentSourceIndex = imageColorTransparent($sourceImage);
+			$palletsize = imageColorsTotal($sourceImage);
+
+			if($transparentSourceIndex >= 0 and $transparentSourceIndex < $palletsize)
+			{
+				$transparentColor     = imageColorsForIndex($sourceImage, $transparentSourceIndex);
+				$transparentDestIndex = imageColorAllocate($image, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+				imageColorTransparent($image, $transparentDestIndex);
+				imageFill($image, 0, 0, $transparentDestIndex);
+			}
 		}
 
 		return $image;
@@ -425,28 +436,6 @@ class Image
 	}
 
 	/**
-	 * Creating output image file.
-	 * @param string $filename output file name
-	 * @return bool
-	 * @throws ImageException
-	 */
-	private function createOutputImageFile($filename)
-	{
-		$ext = $this->getExtension();
-		$img = $this->image();
-
-		switch($ext)
-		{
-			case 'jpg':
-			case 'jpeg': return imagejpeg($img, $filename);
-			case 'png':  return imagepng($img, $filename);
-			case 'gif':  return imagegif($img, $filename);
-			default: $this->throwException("Unknow image format - $ext.");
-		}
-		return true;
-	}
-
-	/**
 	 * Returns TRUE if image file extsts.
 	 * @return bool
 	 */
@@ -514,6 +503,28 @@ class Image
 	}
 
 	/**
+	 * Creating output image file.
+	 * @param string $filename output file name
+	 * @return bool
+	 * @throws ImageException
+	 */
+	private function createOutputImageFile($filename)
+	{
+		$ext = static::parseExtension($filename);
+		$img = $this->image();
+
+		switch($ext)
+		{
+			case 'jpg':
+			case 'jpeg': return imagejpeg($img, $filename);
+			case 'png': imageSaveAlpha($img, true); return imagepng($img, $filename);
+			case 'gif':  return imagegif($img, $filename);
+			default: $this->throwException("Unknow image format - $ext.");
+		}
+		return true;
+	}
+
+	/**
 	 * Saves the image to a path that returns method getFilename().
 	 * @return bool Returns TRUE if saving is success.
 	 */
@@ -535,7 +546,7 @@ class Image
 	/**
 	 * Returns file extension.
 	 * @param string $filename
-	 * @return string
+	 * @return string|
 	 */
 	public static function parseExtension($filename)
 	{
