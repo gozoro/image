@@ -199,16 +199,19 @@ class Image
 		}
 		elseif($ext == 'gif')
 		{
-			$sourceImage = $this->image();
-			$transparentSourceIndex = imageColorTransparent($sourceImage);
-
-			if($transparentSourceIndex !== -1)
-			{
-				$transparentColor     = imageColorsForIndex($sourceImage, $transparentSourceIndex);
-				$transparentDestIndex = imageColorAllocate($image, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
-				imageColorTransparent($image, $transparentDestIndex);
-				imageFill($image, 0, 0, $transparentDestIndex);
-			}
+//			$sourceImage = $this->image();
+//			$transparentSourceIndex = imageColorTransparent($sourceImage);
+//
+//
+//
+//
+//			if($transparentSourceIndex !== -1)
+//			{
+//				$transparentColor     = imageColorsForIndex($sourceImage, $transparentSourceIndex);
+//				$transparentDestIndex = imageColorAllocate($image, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+//				imageColorTransparent($image, $transparentDestIndex);
+//				imageFill($image, 0, 0, $transparentDestIndex);
+//			}
 		}
 
 		return $image;
