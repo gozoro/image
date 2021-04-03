@@ -43,14 +43,14 @@ class Image
 	}
 
 	/**
-	 * Sets file name
+	 * Sets file name.
 	 * @param string $filename
 	 * @return static
 	 */
 	public function setFilename($filename)
 	{
 		$this->filename = $filename;
-		$this->ext = null;
+		$this->ext      = static::parseExtension($filename);
 		return $this;
 	}
 
@@ -78,12 +78,6 @@ class Image
 	 */
 	public function getExtension()
 	{
-		if(!isset($this->ext))
-		{
-			$filename  = $this->getFilename();
-			$this->ext = static::parseExtension($filename);
-		}
-
 		return $this->ext;
 	}
 
